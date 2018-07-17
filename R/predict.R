@@ -159,29 +159,36 @@ get_difference <- function(model, comp, cond=NULL,
 				warning(sprintf('Predictor %s specified in comp and cond. (The value in cond will be ignored.)', i))
 			}
 		}
-		new.cond1 <- list()
-		new.cond2 <- list()
-		for(i in names(su)){
-			if(i %in% names(comp)){
-				new.cond1[[i]] <- comp[[i]][1]
-				new.cond2[[i]] <- comp[[i]][2]
-			}else if(i %in% names(cond)){
-				new.cond1[[i]] <- new.cond2[[i]] <- cond[[i]]
-			}else{
-				if(class(su[[i]])=="factor"){
-					new.cond1[[i]] <- as.character(su[[i]][1])
-					new.cond2[[i]] <- as.character(su[[i]][1])
-				}else if(class(su[[i]])=="numeric"){
-					new.cond1[[i]] <- su[[i]][2]
-					new.cond2[[i]] <- su[[i]][2]
+
+		make.newd <- function (val) {
+			new.cond <- list()
+			for (x in names(su)) {
+				if (x %in% names(comp)) {
+					new.cond[[x]] <- val
+				} else if (x %in% names(cond)) {
+					new.cond[[x]] <- cond[[x]][i]
+				} else if (class(su[[x]]) == 'factor') {
+					new.cond[[x]] <- as.character(su[[x]][1]) #reference level
+				} else if (class(su[[x]]) == 'numeric') {
+					new.cond[[x]] <- su[[x]][2] #median
 				}
 			}
+			expand.grid(new.cond)
 		}
-		newd1 <- expand.grid(new.cond1)
-		newd2 <- expand.grid(new.cond2)
-		p1 <- mgcv::predict.gam(model, newd1, type='lpmatrix') 
-		p2 <- mgcv::predict.gam(model, newd2, type='lpmatrix')
-		newd <- as.data.frame(newd1)
+		make.lpmatrix <- function (lod) {
+			ret <- lapply(lod,function (d) mgcv::predict.gam(model,d,type='lpmatrix'))
+			# if more than one lpmatrix, average them
+			ret <- Reduce(`+`,ret)
+			ret/length(lod)
+		}
+
+		if (length(comp) != 1) stop('comp is malformed: provide a list containing either a named length-2 vector to compare conditions, or a named length-2 list of vectors of conditions to compare condition averages')
+		# semantics change compared to original itsadug code: new.condX now returns a *list*!
+		newd1 <- lapply(comp[[1]][[1]],make.newd)
+		newd2 <- lapply(comp[[1]][[2]],make.newd)
+		p1 <- make.lpmatrix(newd1)
+		p2 <- make.lpmatrix(newd2)
+		newd <- as.data.frame(newd1[[1]])
 		newd.names <- colnames(newd)
 		for(nn in newd.names){
 			if(nn %in% names(comp)){
