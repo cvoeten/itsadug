@@ -207,7 +207,7 @@ get_difference <- function(model, comp, cond=NULL,
 							stringsAsFactors=FALSE)
 					} ) ) )
 			# smoothlabels <- smoothlabels[smoothlabels$Dim==0,c("Label", "Class")]
-			smoothlabels <- as.vector( smoothlabels.table[smoothlabels.table$Class %in% c("random.effect","fs.interaction"), "Label"] )
+			smoothlabels <- as.vector( smoothlabels.table[, "Label"] )
 			if(class(rm.ranef)=="logical"){
 				if(rm.ranef[1]==TRUE){
 					rm.ranef <- smoothlabels			
@@ -216,7 +216,7 @@ get_difference <- function(model, comp, cond=NULL,
 				}
 			}else if (inherits(rm.ranef, c("numeric", "integer"))){
 				smoothlabels.table <- smoothlabels.table[rm.ranef,]
-				smoothlabels <- as.vector( smoothlabels.table[smoothlabels.table$Class %in% c("random.effect","fs.interaction"), "Label"] )
+				smoothlabels <- as.vector( smoothlabels.table[, "Label"] )
 			}
 			rm.col <- unlist(lapply(rm.ranef, 
 				function(x){
@@ -383,7 +383,7 @@ get_fitted <- function(model, se=1.96, rm.ranef=NULL,
 							stringsAsFactors=FALSE)
 					} ) ) )
 			# smoothlabels <- smoothlabels[smoothlabels$Dim==0,c("Label", "Class")]
-			smoothlabels <- as.vector( smoothlabels.table[smoothlabels.table$Class %in% c("random.effect","fs.interaction"), "Label"] )
+			smoothlabels <- as.vector( smoothlabels.table[, "Label"] )
 			if(class(rm.ranef)=="logical"){
 				if(rm.ranef[1]==TRUE){
 					rm.ranef <- smoothlabels			
@@ -392,7 +392,7 @@ get_fitted <- function(model, se=1.96, rm.ranef=NULL,
 				}
 			}else if (inherits(rm.ranef, c("numeric", "integer"))){
 				smoothlabels.table <- smoothlabels.table[rm.ranef,]
-				smoothlabels <- as.vector( smoothlabels.table[smoothlabels.table$Class %in% c("random.effect","fs.interaction"), "Label"] )
+				smoothlabels <- as.vector( smoothlabels.table[, "Label"] )
 			}
 			rm.col <- unlist(lapply(rm.ranef, 
 				function(x){
@@ -754,7 +754,7 @@ get_predictions <- function(model, cond=NULL,
 							stringsAsFactors=FALSE)
 					} ) ) )
 			# smoothlabels <- smoothlabels[smoothlabels$Dim==0,c("Label", "Class")]
-			smoothlabels <- as.vector( smoothlabels.table[smoothlabels.table$Class %in% c("random.effect","fs.interaction"), "Label"] )
+			smoothlabels <- as.vector( smoothlabels.table[, "Label"] )
 			if(class(rm.ranef)=="logical"){
 				if(rm.ranef[1]==TRUE){
 					rm.ranef <- smoothlabels			
@@ -763,7 +763,7 @@ get_predictions <- function(model, cond=NULL,
 				}
 			}else if (inherits(rm.ranef, c("numeric", "integer"))){
 				smoothlabels.table <- smoothlabels.table[rm.ranef,]
-				smoothlabels <- as.vector( smoothlabels.table[smoothlabels.table$Class %in% c("random.effect","fs.interaction"), "Label"] )
+				smoothlabels <- as.vector( smoothlabels.table[, "Label"] )
 			}
 			rm.col <- unlist(lapply(rm.ranef, 
 				function(x){
