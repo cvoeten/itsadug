@@ -74,7 +74,7 @@ get_coefs <- function (model, se=TRUE) {
 #' @param comp A named list with the two levels to compare.
 #' @param cond A named list of the values to use for the other predictor 
 #' terms. Variables omitted from this list will have the closest observed 
-#' value to the median for continuous variables, or the reference level for 
+#' value to the median for continuous variables, or the first level in the data for 
 #' factors. 
 #' @param rm.ranef Logical: whether or not to remove random effects. 
 #' Default is FALSE. Alternatively a vector of numbers with the 
@@ -145,8 +145,6 @@ get_difference <- function(model, comp, cond=NULL,
 			for(i in 1:length(comp)){
 				if(length(comp[[i]]) < 2){
 					stop(sprintf('Provide two levels for %s to calculate difference.', names(comp)[i]))
-				}else if(length(comp[[i]]) > 2){
-					warning(sprintf('More than two levels provided for predictor %s. Only first two levels are being used.', names(comp)[i]))
 				}
 			}
 		}else{
@@ -166,9 +164,9 @@ get_difference <- function(model, comp, cond=NULL,
 				if (x %in% names(comp)) {
 					new.cond[[x]] <- val
 				} else if (x %in% names(cond)) {
-					new.cond[[x]] <- cond[[x]][i]
+					new.cond[[x]] <- cond[[x]]
 				} else if (class(su[[x]]) == 'factor') {
-					new.cond[[x]] <- as.character(su[[x]][1]) #reference level
+					new.cond[[x]] <- as.character(su[[x]][1]) #first level in the data
 				} else if (class(su[[x]]) == 'numeric') {
 					new.cond[[x]] <- su[[x]][2] #median
 				}
@@ -640,8 +638,11 @@ get_modelterm <- function(model, select, cond=NULL, n.grid=30,
 #' @param model A gam object, produced by \code{\link[mgcv]{gam}} or 
 #' \code{\link[mgcv]{bam}}.
 #' @param cond A named list of the values to use for the predictor terms. 
-#' Variables omitted from this list will have the closest observed value to 
-#' the median for continuous variables, or the reference level for factors. 
+#' Variables omitted from this list and from 'avg.cond' will have the closest observed value to 
+#' the median for continuous variables, or the first level in the data for factors. 
+#' @param avg.cond A named list of the values over which to average the predictor terms. 
+#' Variables omitted from this list and from 'cond' will have the closest observed value to 
+#' the median for continuous variables, or the first level in the data for factors. 
 #' @param rm.ranef Logical: whether or not to remove random effects. 
 #' Default is FALSE. Alternatively a vector with numbers (modelterms) 
 #' of the random effect(s) to remove.
@@ -715,7 +716,7 @@ get_modelterm <- function(model, select, cond=NULL, n.grid=30,
 #'
 #' @author Jacolien van Rij
 #' @family Model predictions
-get_predictions <- function(model, cond=NULL, 
+get_predictions <- function(model, cond=NULL, avg.cond=NULL, 
 	rm.ranef=NULL, 
 	se=TRUE, sim.ci=FALSE, f=1.96, 
 	return.n.posterior = 0,
@@ -735,21 +736,36 @@ get_predictions <- function(model, cond=NULL,
 		}
 		newd <- NULL
 		su <- model$var.summary
-		new.cond <- list()
-		for(i in names(su)){
-			if(i %in% names(cond)){
-				new.cond[[i]] <- cond[[i]]
-			}else{
-				if(class(su[[i]])=="factor"){
-					new.cond[[i]] <- as.character(su[[i]][1])
-				}else if(class(su[[i]])=="numeric"){
-					new.cond[[i]] <- su[[i]][2]
+
+		make.newd <- function (val) {
+			new.cond <- list()
+			for (x in names(su)) {
+				if (x %in% names(avg.cond)) {
+					new.cond[[x]] <- val
+				} else if (x %in% names(cond)) {
+					new.cond[[x]] <- cond[[x]]
+				} else if (class(su[[x]]) == 'factor') {
+					new.cond[[x]] <- as.character(su[[x]][1]) #first level in the data
+				} else if (class(su[[x]]) == 'numeric') {
+					new.cond[[x]] <- su[[x]][2] #median
 				}
 			}
+			expand.grid(new.cond)
 		}
-		newd <- expand.grid(new.cond)
+		make.lpmatrix <- function (lod) {
+			ret <- lapply(lod,function (d) mgcv::predict.gam(model,d,type='lpmatrix'))
+			# if more than one lpmatrix, average them
+			ret <- Reduce(`+`,ret)
+			ret/length(lod)
+		}
+
+		if (length(avg.cond) > 1) stop('avg.cond is malformed: provide a list containing a single named vector of conditions to compare condition averages')
+		# semantics change compared to original itsadug code: new.condX now returns a *list*!
+		newd <- if (length(avg.cond)) lapply(avg.cond[[1]],make.newd) else list(make.newd(NULL))
+		p <- make.lpmatrix(newd)
+		newd <- as.data.frame(newd[[1]])
+
 		mysummary <- summary_data(newd, print=FALSE)		
-		p <- mgcv::predict.gam(model, newd, type='lpmatrix')
 		if(!is.null(rm.ranef)){	
 			# get random effects columns:
 			smoothlabels.table <- as.data.frame( do.call('rbind', 

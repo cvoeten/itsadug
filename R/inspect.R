@@ -1361,6 +1361,8 @@ plot_parametric <- function(x, pred, cond = list(),
 #' @param cond A named list of the values to use for the other predictor terms 
 #' (not in view). Used for choosing between smooths that share the same view 
 #' predictors.
+#' @param avg.cond A named list of values for predictor terms over which
+#' predictions should be averaged.
 #' @param plot_all A vector with a name / names of model predictors, 
 #' for which all levels should be plotted.
 #' @param rm.ranef Logical: whether or not to remove random effects. 
@@ -1509,7 +1511,7 @@ plot_parametric <- function(x, pred, cond = list(),
 #' @seealso \code{\link[mgcv]{plot.gam}}, \code{\link{plot_diff}} 
 #'
 #' @family Functions for model inspection
-plot_smooth <- function(x, view = NULL, cond = list(), 
+plot_smooth <- function(x, view = NULL, cond = list(), avg.cond = list(), 
     plot_all=NULL, rm.ranef=NULL,
     n.grid = 30, rug = NULL, add=FALSE, 
     se = 1.96, sim.ci=FALSE, shade = TRUE, eegAxis=FALSE, 
@@ -1616,7 +1618,7 @@ plot_smooth <- function(x, view = NULL, cond = list(),
         m1 <- seq(xlim[1], xlim[2], length=n.grid)
     }
     cond[[view[1]]] <- m1
-    newd <- get_predictions(x, cond=cond, se=ifelse(se>0, TRUE, FALSE), 
+    newd <- get_predictions(x, cond=cond, avg.cond=avg.cond, se=ifelse(se>0, TRUE, FALSE), 
         f=ifelse(se>0, se, 1.96), sim.ci=sim.ci, rm.ranef=rm.ranef,
         print.summary=print.summary)
     if(se > 0){
